@@ -33,6 +33,10 @@ esp_sleep_source_t wakeCause; // the reason we booted this time
 #endif
 #include "Throttle.h"
 
+#if HAS_LORA_FEM
+#include "mesh/LoRaFEMController.h"
+#endif
+
 #ifdef USE_XL9555
 #include "ExtensionIOXL9555.hpp"
 extern ExtensionIOXL9555 io;
@@ -561,7 +565,7 @@ void enableLoraInterrupt()
 #endif
 
 #if HAS_LORA_FEM
-    loraFEMInterface.setRxModeEnableWhenMCUSleep();
+    loraFEMController.setRxModeEnableWhenMCUSleep();
 #endif
 
     LOG_INFO("setup LORA_DIO1 (GPIO%02d) with wakeup by gpio interrupt", LORA_DIO1);

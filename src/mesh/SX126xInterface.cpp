@@ -57,11 +57,12 @@ template <typename T> bool SX126xInterface<T>::init()
 #endif
 
 #if HAS_LORA_FEM
-    loraFEMInterface.init();
-    if((config.lora.fem_lna_mode == meshtastic_Config_LoRaConfig_FEM_LNA_Mode_ENABLED) && loraFEMInterface.isLnaCanControl()) {
-        loraFEMInterface.setLNAEnable(true);
-    } else if ((config.lora.fem_lna_mode == meshtastic_Config_LoRaConfig_FEM_LNA_Mode_DISABLED) && loraFEMInterface.isLnaCanControl()) {
-        loraFEMInterface.setLNAEnable(false);
+    loraFEMController.init();
+    if ((config.lora.fem_lna_mode == meshtastic_Config_LoRaConfig_FEM_LNA_Mode_ENABLED) && loraFEMController.isLnaCanControl()) {
+        loraFEMController.setLNAEnable(true);
+    } else if ((config.lora.fem_lna_mode == meshtastic_Config_LoRaConfig_FEM_LNA_Mode_DISABLED) &&
+               loraFEMController.isLnaCanControl()) {
+        loraFEMController.setLNAEnable(false);
     }
 #endif
 
@@ -395,7 +396,7 @@ template <typename T> bool SX126xInterface<T>::sleep()
 #endif
 
 #if HAS_LORA_FEM
-    loraFEMInterface.setSleepModeEnable();
+    loraFEMController.setSleepModeEnable();
 #endif
 
     return true;
@@ -461,9 +462,9 @@ template <typename T> void SX126xInterface<T>::setTransmitEnable(bool txon)
 {
 #if HAS_LORA_FEM
     if (txon) {
-        loraFEMInterface.setTxModeEnable();
+        loraFEMController.setTxModeEnable();
     } else {
-        loraFEMInterface.setRxModeEnable();
+        loraFEMController.setRxModeEnable();
     }
 #endif
 }

@@ -8,8 +8,8 @@
 #include "error.h"
 #include <memory>
 
-#ifdef HAS_LORA_FEM
-#include "LoRaFEMInterface.h"
+#if HAS_LORA_FEM
+#include "LoRaFEMController.h"
 #endif
 
 // Forward decl to avoid a direct include of generated config headers / full LoRaConfig definition in this widely-included file.
