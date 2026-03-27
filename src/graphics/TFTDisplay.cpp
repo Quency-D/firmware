@@ -450,7 +450,7 @@ class TOUCH_CHSC6X : public ITouch
     bool init(void) override
     {
         if (chsc6xTouch == nullptr) {
-            chsc6xTouch = new chsc6x(&Wire1, TOUCH_SDA_PIN, TOUCH_SCL_PIN, TOUCH_INT_PIN, TOUCH_RST_PIN);
+            chsc6xTouch = new chsc6x(&Wire, TOUCH_SDA_PIN, TOUCH_SCL_PIN, TOUCH_INT_PIN, TOUCH_RST_PIN);
         }
         chsc6xTouch->chsc6x_init();
         return true;
