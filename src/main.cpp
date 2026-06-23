@@ -501,6 +501,9 @@ void setup()
     LOG_INFO("Wait for peripherals to stabilize");
     delay(PERIPHERAL_WARMUP_MS);
 #endif
+#ifdef HELTEC_V4
+    detectHeltecV4Hardware();
+#endif
     initSPI();
 
     OSThread::setup();
@@ -540,6 +543,9 @@ void setup()
 #endif
 
 #if !MESHTASTIC_EXCLUDE_I2C
+#if defined(HELTEC_V4)
+    beginHeltecV4ExpansionI2C();
+#else
 #if defined(I2C_SDA1) && defined(ARCH_RP2040)
     Wire1.setSDA(I2C_SDA1);
     Wire1.setSCL(I2C_SCL1);
@@ -566,6 +572,7 @@ void setup()
     }
 #elif HAS_WIRE
     Wire.begin();
+#endif
 #endif
 #endif
 
@@ -605,6 +612,14 @@ void setup()
     LOG_INFO("Scan for i2c devices");
 #endif
 
+#if defined(HELTEC_V4)
+    if (heltecV4ExpansionUsesWire1()) {
+        i2cScanner->scanPort(ScanI2C::I2CPort::WIRE1);
+    }
+    if (heltecV4ExpansionUsesWire()) {
+        i2cScanner->scanPort(ScanI2C::I2CPort::WIRE);
+    }
+#else
 #if defined(I2C_SDA1) || (defined(NRF52840_XXAA) && (WIRE_INTERFACES_COUNT == 2))
     i2cScanner->scanPort(ScanI2C::I2CPort::WIRE1);
 #endif
@@ -618,6 +633,7 @@ void setup()
     }
 #elif HAS_WIRE
     i2cScanner->scanPort(ScanI2C::I2CPort::WIRE);
+#endif
 #endif
 
     auto i2cCount = i2cScanner->countDevices();
@@ -792,6 +808,9 @@ void setup()
     // We do this as early as possible because this loads preferences from flash
     // but we need to do this after main cpu init (esp32setup), because we need the random seed set
     nodeDB = new NodeDB;
+#ifdef HELTEC_V4
+    reconcileHeltecV4ExpansionBuzzerConfig();
+#endif
 
     // Initialize transmit history to persist broadcast throttle timers across reboots
     TransmitHistory::getInstance()->loadFromDisk();
@@ -956,7 +975,11 @@ void setup()
 #ifdef SENSOR_GPS_CONFLICT
     if (sensor_detected == false) {
 #endif
-        if (HAS_GPS) {
+        if (HAS_GPS
+#ifdef HELTEC_V4
+            && heltecV4ExpansionPresent()
+#endif
+        ) {
             if (config.position.gps_mode != meshtastic_Config_PositionConfig_GpsMode_NOT_PRESENT) {
                 gps = GPS::createGps();
                 if (gps) {

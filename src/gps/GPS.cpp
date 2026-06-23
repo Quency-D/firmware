@@ -1236,6 +1236,10 @@ void GPS::writePinEN(bool on)
 void GPS::writePinStandby(bool standby)
 {
 #ifdef PIN_GPS_STANDBY // Specifically the standby pin for L76B, L76K and clones
+    const int standbyPin = PIN_GPS_STANDBY;
+    if (standbyPin < 0) {
+        return;
+    }
     bool val;
     if (standby)
         val = GPS_STANDBY_ACTIVE;
@@ -1243,8 +1247,8 @@ void GPS::writePinStandby(bool standby)
         val = !GPS_STANDBY_ACTIVE;
 
     // Write and log
-    pinMode(PIN_GPS_STANDBY, OUTPUT);
-    digitalWrite(PIN_GPS_STANDBY, val);
+    pinMode(standbyPin, OUTPUT);
+    digitalWrite(standbyPin, val);
 
     // Enter backup mode on PA1010D; TODO: may be applicable to other MTK GPS too
     if (IS_ONE_OF(gnssModel, GNSS_MODEL_MTK_PA1010D)) {
@@ -1378,7 +1382,7 @@ void GPS::down()
 // Check whether the GPS hardware is capable of GPS_SOFTSLEEP
 // If not, fallback to GPS_HARDSLEEP instead
 #ifdef PIN_GPS_STANDBY // L76B, L76K and clones have a standby pin
-        bool softsleepSupported = true;
+        bool softsleepSupported = PIN_GPS_STANDBY >= 0;
 #else
         bool softsleepSupported = false;
 #endif
@@ -1630,10 +1634,13 @@ GnssModel_t GPS::probe(int serialSpeed)
         memset(&ublox_info, 0, sizeof(ublox_info));
         delay(100);
 
-#if defined(PIN_GPS_RESET) && PIN_GPS_RESET != -1
-        digitalWrite(PIN_GPS_RESET, GPS_RESET_MODE); // assert for 10ms
-        delay(10);
-        digitalWrite(PIN_GPS_RESET, !GPS_RESET_MODE);
+#ifdef PIN_GPS_RESET
+        const int resetPin = PIN_GPS_RESET;
+        if (resetPin >= 0) {
+            digitalWrite(resetPin, GPS_RESET_MODE); // assert for 10ms
+            delay(10);
+            digitalWrite(resetPin, !GPS_RESET_MODE);
+        }
 #ifdef TRACKER_T1000_E
         delay(100);
 #endif
@@ -1951,8 +1958,11 @@ std::unique_ptr<GPS> GPS::createGps()
     new_gps->up();
 
 #ifdef PIN_GPS_RESET
-    pinMode(PIN_GPS_RESET, OUTPUT);
-    digitalWrite(PIN_GPS_RESET, !GPS_RESET_MODE);
+    const int resetPin = PIN_GPS_RESET;
+    if (resetPin >= 0) {
+        pinMode(resetPin, OUTPUT);
+        digitalWrite(resetPin, !GPS_RESET_MODE);
+    }
 #endif
 
     if (_serial_gps) {

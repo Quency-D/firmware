@@ -278,6 +278,13 @@ void fsInit()
 void setupSDCard()
 {
 #if defined(HAS_SDCARD) && !defined(SDCARD_USE_SOFT_SPI) && !defined(HAS_SD_MMC)
+#if defined(HELTEC_V4_TFT)
+    return;
+#elif defined(HELTEC_V4)
+    if (!heltecV4ExpansionSdAvailable()) {
+        return;
+    }
+#endif
     concurrency::LockGuard g(spiLock);
     SDHandler.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
     if (!SD.begin(SDCARD_CS, SDHandler, SD_SPI_FREQUENCY)) {

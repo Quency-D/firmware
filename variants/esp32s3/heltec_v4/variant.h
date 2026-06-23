@@ -84,12 +84,18 @@
  * GPS pins
  */
 #define GPS_L76K
+#ifndef PIN_GPS_RESET
 #define PIN_GPS_RESET (42) // An output to reset L76K GPS. As per datasheet, low for > 100ms will reset the L76K
+#endif
 #define GPS_RESET_MODE LOW
+#ifndef PIN_GPS_EN
 #define PIN_GPS_EN (34)
+#endif
 #define GPS_EN_ACTIVE LOW
 #define PERIPHERAL_WARMUP_MS 1000 // Make sure I2C QuickLink has stable power before continuing
-#define PIN_GPS_STANDBY (40)      // An output to wake GPS, low means allow sleep, high means force wake
+#ifndef PIN_GPS_STANDBY
+#define PIN_GPS_STANDBY (40) // An output to wake GPS, low means allow sleep, high means force wake
+#endif
 #define PIN_GPS_PPS (41)
 // Seems to be missing on this new board
 #define GPS_TX_PIN (38) // This is for bits going TOWARDS the CPU

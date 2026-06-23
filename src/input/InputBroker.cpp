@@ -283,23 +283,26 @@ void InputBroker::Init()
 
 #if defined(ALT_BUTTON_PIN)
     // Buttons. Moved here cause we need NodeDB to be initialized
-    BackButtonThread = new ButtonThread("BackButton");
-    ButtonConfig backConfig;
-    backConfig.pinNumber = ALT_BUTTON_PIN;
-    backConfig.activeLow = ALT_BUTTON_ACTIVE_LOW;
-    backConfig.activePullup = ALT_BUTTON_ACTIVE_PULLUP;
-    backConfig.pullupSense = pullup_sense;
-    backConfig.intRoutine = []() {
-        BackButtonThread->userButton.tick();
-        BackButtonThread->setIntervalFromNow(0);
-        runASAP = true;
-        BaseType_t higherWake = 0;
-        concurrency::mainDelay.interruptFromISR(&higherWake);
-    };
-    backConfig.singlePress = INPUT_BROKER_ALT_PRESS;
-    backConfig.longPress = INPUT_BROKER_ALT_LONG;
-    backConfig.longPressTime = 500;
-    BackButtonThread->initButton(backConfig);
+    const int altButtonPin = ALT_BUTTON_PIN;
+    if (altButtonPin >= 0) {
+        BackButtonThread = new ButtonThread("BackButton");
+        ButtonConfig backConfig;
+        backConfig.pinNumber = altButtonPin;
+        backConfig.activeLow = ALT_BUTTON_ACTIVE_LOW;
+        backConfig.activePullup = ALT_BUTTON_ACTIVE_PULLUP;
+        backConfig.pullupSense = pullup_sense;
+        backConfig.intRoutine = []() {
+            BackButtonThread->userButton.tick();
+            BackButtonThread->setIntervalFromNow(0);
+            runASAP = true;
+            BaseType_t higherWake = 0;
+            concurrency::mainDelay.interruptFromISR(&higherWake);
+        };
+        backConfig.singlePress = INPUT_BROKER_ALT_PRESS;
+        backConfig.longPress = INPUT_BROKER_ALT_LONG;
+        backConfig.longPressTime = 500;
+        BackButtonThread->initButton(backConfig);
+    }
 #endif
 
 #if defined(BUTTON_PIN)

@@ -379,9 +379,22 @@ void doDeepSleep(uint32_t msecToWake, bool skipPreflight = false, bool skipSaveN
 #if !MESHTASTIC_EXCLUDE_I2C && defined(ARCH_ESP32) && defined(I2C_SDA)
     // Added by https://github.com/meshtastic/firmware/pull/4418
     // Possibly to support Heltec Capsule Sensor?
+#if defined(HELTEC_V4)
+    if (heltecV4ExpansionUsesWire()) {
+        Wire.end();
+        pinMode(I2C_SDA, ANALOG);
+        pinMode(I2C_SCL, ANALOG);
+    }
+    if (heltecV4ExpansionUsesWire1()) {
+        Wire1.end();
+        pinMode(I2C_SDA1, ANALOG);
+        pinMode(I2C_SCL1, ANALOG);
+    }
+#else
     Wire.end();
     pinMode(I2C_SDA, ANALOG);
     pinMode(I2C_SCL, ANALOG);
+#endif
 #endif
 
     console->flush();
