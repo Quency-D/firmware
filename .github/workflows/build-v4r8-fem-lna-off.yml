@@ -1,0 +1,109 @@
+name: V4R8 FEM LNA default-off test firmware
+
+on:
+  push:
+    branches:
+      - build/v4r8-fem-lna-off-8c76d9c3
+    paths:
+      - .github/workflows/build-v4r8-fem-lna-off.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - heltec-v4-r8-oled
+          - heltec-v4-r8-tft
+    env:
+      SOURCE_COMMIT: 8c76d9c3a10c51fc7be1328bfc14f189d581d7ab
+      BUILD_TARGET: ${{ matrix.target }}
+    steps:
+      - name: Check out the exact firmware revision
+        uses: actions/checkout@v7
+        with:
+          ref: 8c76d9c3a10c51fc7be1328bfc14f189d581d7ab
+          submodules: recursive
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify source revision and FEM LNA changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
+          python3 - <<'PY'
+          from pathlib import Path
+          node = Path('src/mesh/NodeDB.cpp').read_text()
+          hdr = Path('src/mesh/LoRaFEMInterface.h').read_text()
+          src = Path('src/mesh/LoRaFEMInterface.cpp').read_text()
+          assert 'config.lora.fem_lna_mode = meshtastic_Config_LoRaConfig_FEM_LNA_Mode_DISABLED;' in node
+          assert 'bool lna_enabled = false;' in hdr
+          assert src.count('digitalWrite(LORA_KCT8103L_PA_CTX, lna_enabled ? LOW : HIGH);') == 2
+          print('Verified default configuration and both KCT8103L initialization paths.')
+          PY
+
+      - name: Build with the upstream Meshtastic toolchain
+        uses: meshtastic/gh-action-firmware@main
+        with:
+          pio_platform: esp32s3
+          pio_env: ${{ matrix.target }}
+          pio_target: build
+
+      - name: Package binaries and flashing scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d release
+          test -n "$(find release -maxdepth 1 -name 'firmware-*.bin' -print -quit)"
+          curl --fail --location --retry 3 \
+            https://github.com/meshtastic/esp32-unified-ota/releases/latest/download/mt-esp32s3-ota.bin \
+            --output release/mt-esp32s3-ota.bin
+          cp bin/device-*.sh bin/device-*.bat release/
+          {
+            echo "Repository: Quency-D/firmware"
+            echo "Source branch: fem-lna-default-off"
+            echo "Source commit: $SOURCE_COMMIT"
+            echo "PlatformIO target: $BUILD_TARGET"
+            echo "Build workflow: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo "FEM LNA: default configuration DISABLED; driver default false; initialization follows driver state."
+            echo "Existing saved ENABLED settings are preserved."
+            echo "Hardware validation: not performed by this build."
+          } > release/BUILD-INFO.txt
+          (
+            cd release
+            find . -maxdepth 1 -name '*.bin' -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
+          )
+          ls -lh release/
+
+      - name: Upload test firmware
+        uses: actions/upload-artifact@v7
+        with:
+          name: fem-lna-off-${{ matrix.target }}-8c76d9c3
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            release/*.bin
+            release/*.mt.json
+            release/device-*.sh
+            release/device-*.bat
+            release/BUILD-INFO.txt
+            release/SHA256SUMS.txt
+
+      - name: Upload debug symbols
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: debug-${{ matrix.target }}-8c76d9c3
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            release/*.elf
+            release/*.map
