@@ -1,11 +1,9 @@
-name: V4R8 FEM LNA default-off test firmware
+name: V4R8 TFT FEM LNA default-off test firmware
 
 on:
   push:
     branches:
       - build/v4r8-fem-lna-off-8c76d9c3
-    paths:
-      - .github/workflows/build-v4r8-fem-lna-off.yml
   workflow_dispatch:
 
 permissions:
@@ -13,21 +11,15 @@ permissions:
 
 jobs:
   build:
-    name: ${{ matrix.target }}
-    runs-on: ubuntu-latest
+    name: Build heltec-v4-r8-tft from 8c76d9c3
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        target:
-          - heltec-v4-r8-oled
-          - heltec-v4-r8-tft
     env:
       SOURCE_COMMIT: 8c76d9c3a10c51fc7be1328bfc14f189d581d7ab
-      BUILD_TARGET: ${{ matrix.target }}
+      BUILD_TARGET: heltec-v4-r8-tft
     steps:
       - name: Check out the exact firmware revision
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           ref: 8c76d9c3a10c51fc7be1328bfc14f189d581d7ab
           submodules: recursive
@@ -54,15 +46,14 @@ jobs:
         uses: meshtastic/gh-action-firmware@main
         with:
           pio_platform: esp32s3
-          pio_env: ${{ matrix.target }}
+          pio_env: heltec-v4-r8-tft
           pio_target: build
 
-      - name: Package binaries and flashing scripts
+      - name: Package firmware and source information
         shell: bash
         run: |
           set -euo pipefail
-          test -d release
-          test -n "$(find release -maxdepth 1 -name 'firmware-*.bin' -print -quit)"
+          test -n "$(find release -maxdepth 1 -name 'firmware-heltec-v4-r8-tft-*.factory.bin' -print -quit)"
           curl --fail --location --retry 3 \
             https://github.com/meshtastic/esp32-unified-ota/releases/latest/download/mt-esp32s3-ota.bin \
             --output release/mt-esp32s3-ota.bin
@@ -73,20 +64,17 @@ jobs:
             echo "Source commit: $SOURCE_COMMIT"
             echo "PlatformIO target: $BUILD_TARGET"
             echo "Build workflow: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-            echo "FEM LNA: default configuration DISABLED; driver default false; initialization follows driver state."
+            echo "FEM LNA default: DISABLED; driver initialization: RX bypass."
             echo "Existing saved ENABLED settings are preserved."
             echo "Hardware validation: not performed by this build."
           } > release/BUILD-INFO.txt
-          (
-            cd release
-            find . -maxdepth 1 -name '*.bin' -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
-          )
+          (cd release && find . -maxdepth 1 -name '*.bin' -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS.txt)
           ls -lh release/
 
       - name: Upload test firmware
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
-          name: fem-lna-off-${{ matrix.target }}-8c76d9c3
+          name: fem-lna-off-heltec-v4-r8-tft-8c76d9c3
           if-no-files-found: error
           retention-days: 14
           path: |
@@ -99,9 +87,9 @@ jobs:
 
       - name: Upload debug symbols
         if: success()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
-          name: debug-${{ matrix.target }}-8c76d9c3
+          name: debug-heltec-v4-r8-tft-8c76d9c3
           if-no-files-found: warn
           retention-days: 14
           path: |
